@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculator</title>
+<style>
+*{box-sizing:border-box} body{margin:0;background:#101827;color:#fff;font-family:Arial,sans-serif;display:flex;justify-content:center;min-height:100vh}
+.app{width:min(420px,100%);padding:16px}.card{background:#1e293b;border-radius:24px;padding:16px;box-shadow:0 15px 45px #0008}
+.screen{height:100px;background:#07101e;border-radius:16px;padding:14px;display:flex;align-items:end;justify-content:end;font-size:38px;overflow:hidden;margin-bottom:14px}
+.keys{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}button{height:65px;border:0;border-radius:15px;background:#334155;color:white;font-size:23px;font-weight:700}button:active{transform:scale(.97)}
+.op{background:#f59e0b}.danger{background:#ef4444}.equal{background:#10b981}.zero{grid-column:span 2}
+.secret{display:none}.secret h2{text-align:center}.add{width:100%;background:#2563eb;margin:8px 0 16px}.close{width:100%;background:#475569;margin-top:18px}
+.gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.gallery img{width:100%;aspect-ratio:1;border-radius:10px;object-fit:cover}
+.note{text-align:center;color:#94a3b8;font-size:13px;margin-top:8px}
+input[type=file]{display:none}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="card" id="calc">
+    <div class="screen" id="screen">0</div>
+    <div class="keys">
+      <button class="danger" onclick="clearAll()">AC</button><button onclick="back()">⌫</button>
+      <button class="op" onclick="press('%')">%</button><button class="op" onclick="press('/')">÷</button>
+      <button onclick="press('7')">7</button><button onclick="press('8')">8</button><button onclick="press('9')">9</button><button class="op" onclick="press('*')">×</button>
+      <button onclick="press('4')">4</button><button onclick="press('5')">5</button><button onclick="press('6')">6</button><button class="op" onclick="press('-')">−</button>
+      <button onclick="press('1')">1</button><button onclick="press('2')">2</button><button onclick="press('3')">3</button><button class="op" onclick="press('+')">+</button>
+      <button class="zero" onclick="press('0')">0</button><button onclick="press('.')">.</button><button class="equal" onclick="calculate()">=</button>
+    </div>
+    <div class="note">SHAYAN IMRAN CALCULATOR</div>
+  </div>
+
+  <div class="card secret" id="secret">
+    <h2>SHAYAN IMRAN CALCULATOR</h2>
+    <label class="add button" style="display:block;text-align:center;padding:20px;border-radius:15px;font-size:20px;font-weight:700;cursor:pointer">
+      Add image
+      <input id="files" type="file" accept="image/*" multiple>
+    </label>
+    <div class="gallery" id="gallery"></div>
+    <button class="close" onclick="closeSecret()">Close</button>
+  </div>
+</div>
+
+<script>
+let expr='';
+const screen=document.getElementById('screen');
+function show(){screen.textContent=expr||'0'}
+function openSecret(){document.getElementById('calc').style.display='none';document.getElementById('secret').style.display='block';render()}
+function closeSecret(){document.getElementById('secret').style.display='none';document.getElementById('calc').style.display='block';expr='';show()}
+function press(x){
+  if(expr==='Error')expr='';
+  expr+=x;show();
+  // Secret shortcuts: 992= OR 9292=
+  if(expr==='992='||expr==='9292='){openSecret();expr='';show()}
+}
+function clearAll(){expr='';show()}
+function back(){expr=expr.slice(0,-1);show()}
+function calculate(){
+  if(expr==='992'||expr==='9292'){openSecret();expr='';show();return}
+  try{
+    let e=expr;
+    if(!/^[0-9+*/%().\- ]+$/.test(e))throw 0;
+    let r=Function('"use strict";return ('+e+')')();
+    if(!Number.isFinite(r))throw 0;
+    expr=String(Math.round(r*1e12)/1e12);show();
+  }catch{expr='Error';show()}
+}
+document.addEventListener('keydown',e=>{
+  if(/[0-9.+\-*/%]/.test(e.key))press(e.key);
+  else if(e.key==='Enter'||e.key==='=')calculate();
+  else if(e.key==='Backspace')back();
+  else if(e.key==='Escape')clearAll();
+});
+
+const KEY='calculator_secret_images_v1';
+function getImages(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch{return[]}}
+function saveImages(a){localStorage.setItem(KEY,JSON.stringify(a))}
+function render(){
+  const g=document.getElementById('gallery');g.innerHTML='';
+  getImages().forEach((src,i)=>{
+    const wrap=document.createElement('div');wrap.style.position='relative';
+    const img=document.createElement('img');img.src=src;
+    img.title='Tap to remove';img.onclick=()=>{if(confirm('Remove this image?')){let a=getImages();a.splice(i,1);saveImages(a);render()}};
+    wrap.appendChild(img);g.appendChild(wrap);
+  });
+}
+document.getElementById('files').addEventListener('change',async e=>{
+  const files=[...e.target.files].filter(f=>f.type.startsWith('image/'));
+  let a=getImages();
+  for(const f of files){
+    if(a.length>=100)break;
+    const src=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(f)});
+    a.push(src);
+  }
+  saveImages(a);render();e.target.value='';
+});
+</script>
+</body>
+</html>
